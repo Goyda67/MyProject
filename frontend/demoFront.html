@@ -57,17 +57,22 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    </tbody>
+                </tbody>
             </table>
             <div id="loader" class="p-8 text-center text-gray-500 hidden">Загрузка данных...</div>
         </div>
     </div>
 
     <script>
-        // ! ПРОВЕРЬТЕ ПОРТ
-        const BASE_URL = 'localhost' 
-  ? 'http://localhost:8081' 
-  : 'https://myproject-u2ca.onrender.com/';
+        // --- ВАЖНОЕ ИСПРАВЛЕНИЕ URL ---
+        // Проверяем реальное имя хоста, чтобы понять, где мы: локально или на Render
+        const hostname = window.location.hostname;
+        
+        const BASE_URL = (hostname === 'localhost' || hostname === '127.0.0.1')
+            ? 'http://localhost:8081/api/products'             // Локальный адрес с портом 8081
+            : 'https://myproject-u2ca.onrender.com/api/products'; // Адрес Render (без слэша в конце!)
+
+        console.log("API URL set to:", BASE_URL); // Для отладки в консоли браузера
 
         // --- 1. ЧТЕНИЕ (GET) ---
         async function fetchAll() {
@@ -90,9 +95,10 @@
             
             try {
                 const response = await fetch(url);
-                if (!response.ok) throw new Error('Ошибка при загрузке');
+                if (!response.ok) throw new Error('Ошибка при загрузке: ' + response.status);
                 const data = await response.json();
                 
+                // Если пришел один объект, превращаем его в массив
                 const list = Array.isArray(data) ? data : [data];
                 document.getElementById('count').innerText = list.length;
 
@@ -108,8 +114,8 @@
                             <td class="px-5 py-4 font-bold text-gray-800">${p.name}</td>
                             <td class="px-5 py-4 text-green-600 font-mono">${p.price} ₽</td>
                             <td class="px-5 py-4 text-right space-x-2">
-                                <button onclick="startEdit(${p.id}, '${p.name}', ${p.price})" class="text-blue-500 hover:text-blue-700 font-medium">✏️ Изменить</button>
-                                <button onclick="deleteProduct(${p.id})" class="text-red-500 hover:text-red-700 font-medium">🗑️ Удалить</button>
+                                <button onclick="startEdit(${p.id}, '${p.name}', ${p.price})" class="text-blue-500 hover:text-blue-700 font-medium">✏️</button>
+                                <button onclick="deleteProduct(${p.id})" class="text-red-500 hover:text-red-700 font-medium">🗑️</button>
                             </td>
                         </tr>
                     `;
@@ -118,7 +124,8 @@
 
             } catch (err) {
                 console.error(err);
-                alert("Ошибка: " + err.message);
+                // Если ошибка, пишем её прямо в таблицу, чтобы было видно
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Ошибка подключения: ${err.message}</td></tr>`;
             } finally {
                 loader.classList.add('hidden');
             }
@@ -126,12 +133,12 @@
 
         // --- 2. УДАЛЕНИЕ (DELETE) ---
         async function deleteProduct(id) {
-            if (!confirm('Вы уверены, что хотите удалить товар с ID ' + id + '?')) return;
+            if (!confirm('Удалить ID ' + id + '?')) return;
 
             try {
                 const res = await fetch(`${BASE_URL}/${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    fetchAll(); // Обновляем таблицу
+                    fetchAll(); 
                 } else {
                     alert('Ошибка удаления');
                 }
@@ -142,7 +149,7 @@
 
         // --- 3. СОЗДАНИЕ И ОБНОВЛЕНИЕ (POST / PUT) ---
         async function saveProduct(event) {
-            event.preventDefault(); // Чтобы страница не перезагружалась
+            event.preventDefault(); 
 
             const id = document.getElementById('productId').value;
             const name = document.getElementById('name').value;
@@ -150,7 +157,6 @@
 
             const productData = { name: name, price: parseFloat(price) };
 
-            // Если есть ID -> это Редактирование (PUT), иначе -> Создание (POST)
             const method = id ? 'PUT' : 'POST';
             const url = id ? `${BASE_URL}/${id}` : BASE_URL;
 
@@ -162,8 +168,8 @@
                 });
 
                 if (response.ok) {
-                    resetForm(); // Очистить форму
-                    fetchAll();  // Обновить таблицу
+                    resetForm(); 
+                    fetchAll(); 
                 } else {
                     alert('Ошибка сохранения');
                 }
@@ -173,11 +179,8 @@
             }
         }
 
-        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
-        
-        // Заполнить форму данными из строки таблицы
         function startEdit(id, name, price) {
-            document.getElementById('formTitle').innerText = `Редактирование продукта #${id}`;
+            document.getElementById('formTitle').innerText = `Редактирование #${id}`;
             document.getElementById('productId').value = id;
             document.getElementById('name').value = name;
             document.getElementById('price').value = price;
@@ -186,13 +189,12 @@
             document.getElementById('submitBtn').classList.replace('bg-indigo-600', 'bg-green-600');
             document.getElementById('cancelBtn').classList.remove('hidden');
             
-            window.scrollTo({ top: 0, behavior: 'smooth' }); // Прокрутка вверх к форме
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
         }
 
-        // Сбросить форму в исходное состояние
         function resetForm() {
             document.getElementById('productForm').reset();
-            document.getElementById('productId').value = ''; // Важно очистить скрытый ID
+            document.getElementById('productId').value = ''; 
             
             document.getElementById('formTitle').innerText = 'Добавить новый продукт';
             document.getElementById('submitBtn').innerText = 'Добавить';
@@ -200,9 +202,8 @@
             document.getElementById('cancelBtn').classList.add('hidden');
         }
 
-        // Старт
+        // Запуск
         fetchAll();
-
     </script>
 </body>
 </html>
