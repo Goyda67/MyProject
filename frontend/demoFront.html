@@ -65,7 +65,9 @@
 
     <script>
         // ! ПРОВЕРЬТЕ ПОРТ
-        const BASE_URL = 'http://localhost:8082/products';
+        const BASE_URL = 'localhost' 
+  ? 'http://localhost:8081' 
+  : 'https://myproject-u2ca.onrender.com/';
 
         // --- 1. ЧТЕНИЕ (GET) ---
         async function fetchAll() {
