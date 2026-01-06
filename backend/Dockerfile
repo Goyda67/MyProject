@@ -1,28 +1,27 @@
-# --- Этап 1: Сборка Бэкенда (Maven) ---
+# --- Этап 1: Сборка ---
 FROM maven:3.9.6-amazoncorretto-21 AS build
 WORKDIR /app
 
-# 1. Копируем файлы бэкенда (находясь в корне репозитория)
-COPY backend/pom.xml ./backend/
-COPY backend/src ./backend/src
+# Копируем все файлы, чтобы увидеть структуру
+COPY . .
 
-# 2. Копируем НОВЫЙ фронтенд из соседней папки во внутренние ресурсы бэкенда
-# Это гарантирует, что Spring Boot упакует свежий index.html в JAR
-COPY frontend/index.html ./backend/src/main/resources/static/index.html
+# ВАЖНО: Эта команда выведет список файлов в лог Render, 
+# если сборка упадет, мы увидим правильные пути.
+RUN ls -R
 
-# 3. Переходим в папку бэкенда и собираем проект
+# Копируем фронтенд в папку ресурсов бэкенда. 
+# ВНИМАНИЕ: Проверьте название папки (frontend или Frontend или robux-frontend?)
+# Здесь я использую путь относительно корня проекта.
+RUN mkdir -p backend/src/main/resources/static/ && \
+    cp frontend/index.html backend/src/main/resources/static/
+
+# Собираем бэкенд
 WORKDIR /app/backend
 RUN mvn clean package -DskipTests
 
-# --- Этап 2: Запуск приложения ---
+# --- Этап 2: Запуск ---
 FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
-
-# Копируем созданный JAR файл из этапа сборки
 COPY --from=build /app/backend/target/*.jar app.jar
-
-# Render обычно использует порт 10000 или тот, что в настройках, 
-# но мы укажем стандартный для Spring
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
