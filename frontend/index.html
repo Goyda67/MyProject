@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>Robux Store - Купить Робуксы</title>
     <style>
         body {
@@ -234,3 +235,177 @@
     </script>
 </body>
 </html>
+=======
+    <title>Управление складом</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Дополнительный стиль для адаптации таблицы на очень маленьких экранах */
+        @media (max-width: 640px) {
+            table thead { display: none; }
+            table tr { display: block; margin-bottom: 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; }
+            table td { display: flex; justify-content: space-between; padding: 0.5rem !important; border: none !important; }
+            table td::before { content: attr(data-label); font-weight: bold; color: #64748b; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-2xl md:text-3xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+            <span>📦</span> Склад Продуктов
+        </h1>
+
+        <div class="bg-white p-5 md:p-6 rounded-xl shadow-md mb-8 border-l-4 border-indigo-500">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700" id="formTitle">Добавить новый продукт</h2>
+            <form id="productForm" onsubmit="saveProduct(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="hidden" id="productId">
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
+                    <input type="text" id="name" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Например, Молоко">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Цена (₽)</label>
+                    <input type="number" id="price" required step="0.01" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="0.00">
+                </div>
+
+                <div class="flex gap-2 items-end">
+                    <button type="submit" id="submitBtn" class="flex-1 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 active:scale-95 transition font-medium text-sm">
+                        Добавить
+                    </button>
+                    <button type="button" onclick="resetForm()" class="bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-gray-300 transition hidden text-sm" id="cancelBtn">
+                        Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex gap-2 w-full sm:max-w-md">
+                    <input type="number" id="searchInput" placeholder="ID..." class="px-3 py-2 border rounded-lg text-sm w-20 sm:w-24 outline-none focus:ring-2 focus:ring-blue-400">
+                    <button onclick="searchById()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition flex-1 sm:flex-none">Найти</button>
+                    <button onclick="fetchAll()" class="bg-gray-400 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-500 transition">Сброс</button>
+                </div>
+                <div class="text-sm text-gray-500 font-medium">Всего товаров: <span id="count" class="text-indigo-600">0</span></div>
+            </div>
+
+            <table class="min-w-full leading-normal">
+                <thead>
+                    <tr class="bg-gray-800 text-white text-[11px] md:text-xs uppercase tracking-wider">
+                        <th class="px-5 py-4 text-left">ID</th>
+                        <th class="px-5 py-4 text-left">Продукт</th>
+                        <th class="px-5 py-4 text-left">Цена</th>
+                        <th class="px-5 py-4 text-right">Управление</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="text-sm">
+                    </tbody>
+            </table>
+            
+            <div id="loader" class="p-10 text-center text-gray-500 hidden">
+                <div class="animate-spin inline-block w-6 h-6 border-4 border-indigo-500 border-t-transparent rounded-full mb-2"></div>
+                <p>Загрузка данных...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const hostname = window.location.hostname;
+        const BASE_URL = (hostname === 'localhost' || hostname === '127.0.0.1')
+            ? 'http://localhost:8081/api/products' 
+            : 'https://myproject-u2ca.onrender.com/api/products';
+
+        async function loadData(url) {
+            const loader = document.getElementById('loader');
+            const tbody = document.getElementById('tableBody');
+            loader.classList.remove('hidden');
+            tbody.innerHTML = '';
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Ошибка: ' + response.status);
+                const data = await response.json();
+                const list = Array.isArray(data) ? data : [data];
+                document.getElementById('count').innerText = list.length;
+
+                if (list.length === 0 || !list[0]) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-gray-400 text-base">Список пуст 📭</td></tr>';
+                    return;
+                }
+
+                list.forEach(p => {
+                    const row = `
+                        <tr class="border-b hover:bg-indigo-50/50 transition-colors">
+                            <td data-label="ID" class="px-5 py-4 text-gray-400 font-mono text-xs">${p.id}</td>
+                            <td data-label="Продукт" class="px-5 py-4 font-bold text-gray-800">${p.name}</td>
+                            <td data-label="Цена" class="px-5 py-4 text-green-600 font-bold">${p.price} ₽</td>
+                            <td data-label="Действия" class="px-5 py-4 text-right space-x-3">
+                                <button onclick="startEdit(${p.id}, '${p.name}', ${p.price})" class="text-blue-500 hover:text-blue-700 transform hover:scale-110 transition">✏️</button>
+                                <button onclick="deleteProduct(${p.id})" class="text-red-500 hover:text-red-700 transform hover:scale-110 transition">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-red-500">⚠️ Ошибка соединения</td></tr>`;
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        // Остальные функции (fetchAll, deleteProduct, saveProduct, resetForm, startEdit) 
+        // остаются такими же, как в прошлом примере. Просто скопируй их из своего кода.
+        
+        async function fetchAll() { document.getElementById('searchInput').value = ''; await loadData(BASE_URL); }
+        async function searchById() {
+            const id = document.getElementById('searchInput').value;
+            if (!id) return fetchAll();
+            await loadData(`${BASE_URL}/${id}`);
+        }
+        async function deleteProduct(id) {
+            if (!confirm('Удалить товар?')) return;
+            const res = await fetch(`${BASE_URL}/${id}`, { method: 'DELETE' });
+            if (res.ok) fetchAll();
+        }
+        async function saveProduct(event) {
+            event.preventDefault();
+            const id = document.getElementById('productId').value;
+            const name = document.getElementById('name').value;
+            const price = document.getElementById('price').value;
+            const productData = { name, price: parseFloat(price) };
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${BASE_URL}/${id}` : BASE_URL;
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(productData)
+            });
+            if (response.ok) { resetForm(); fetchAll(); }
+        }
+        function startEdit(id, name, price) {
+            document.getElementById('formTitle').innerText = `Изменить #${id}`;
+            document.getElementById('productId').value = id;
+            document.getElementById('name').value = name;
+            document.getElementById('price').value = price;
+            document.getElementById('submitBtn').innerText = 'Сохранить';
+            document.getElementById('submitBtn').classList.replace('bg-indigo-600', 'bg-green-600');
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function resetForm() {
+            document.getElementById('productForm').reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('formTitle').innerText = 'Добавить новый продукт';
+            document.getElementById('submitBtn').innerText = 'Добавить';
+            document.getElementById('submitBtn').classList.replace('bg-green-600', 'bg-indigo-600');
+            document.getElementById('cancelBtn').classList.add('hidden');
+        }
+
+        fetchAll();
+    </script>
+</body>
+</html>
+>>>>>>> 9410bb57b4b68bb3a067cf54273a16e382098e46
