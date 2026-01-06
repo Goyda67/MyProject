@@ -1,28 +1,13 @@
-# --- Этап 1: Сборка Бэкенда (Maven) ---
+# Этап 1: Сборка (используем Amazon Corretto 21)
 FROM maven:3.9.6-amazoncorretto-21 AS build
-WORKDIR /app
-
-# 1. Копируем файлы бэкенда (находясь в корне репозитория)
-COPY backend/pom.xml ./backend/
-COPY backend/src ./backend/src
-
-# 2. Копируем НОВЫЙ фронтенд из соседней папки во внутренние ресурсы бэкенда
-# Это гарантирует, что Spring Boot упакует свежий index.html в JAR
-COPY frontend/index.html ./backend/src/main/resources/static/index.html
-
-# 3. Переходим в папку бэкенда и собираем проект
-WORKDIR /app/backend
+COPY . .
 RUN mvn clean package -DskipTests
 
-# --- Этап 2: Запуск приложения ---
+# Этап 2: Запуск (используем легкий образ Alpine с Java 21)
 FROM eclipse-temurin:21-jdk-alpine
-WORKDIR /app
-
-# Копируем созданный JAR файл из этапа сборки
-COPY --from=build /app/backend/target/*.jar app.jar
-
-# Render обычно использует порт 10000 или тот, что в настройках, 
-# но мы укажем стандартный для Spring
-EXPOSE 8080
-
+# Копируем созданный jar-файл
+COPY --from=build /target/*.jar app.jar
+# Указываем порт 8081
+EXPOSE 8081
+# Команда запуска
 ENTRYPOINT ["java", "-jar", "app.jar"]
